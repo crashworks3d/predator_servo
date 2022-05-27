@@ -1,0 +1,5 @@
+{
+    "configuration": "cpu=atmega168",
+    "board": "arduino:avr:nano",
+    "sketch": "predator_servo.ino"
+}
