@@ -54,6 +54,15 @@ https://www.thingiverse.com/thing:4056653
 1.  In the Arduino IDE be sure to set the appropriate board (Arduino Nano) and ports to match your environment.
 2. Complile and load onto your Arduino Nano following the [Arduino IDE instructions](https://www.arduino.cc/en/Guide).
 
+> Alternatively, you can use VSCode to build and upload your code.  
+See: [https://code.visualstudio.com/](https://code.visualstudio.com/) using the Arduino extension: [https://github.com/microsoft/vscode-arduino](https://github.com/microsoft/vscode-arduino)
+
+3. Download and install the ServoEasing library from here: [https://github.com/ArminJo/ServoEasing](https://github.com/ArminJo/ServoEasing)
+4. Download and install the MPU6050_light library from here: [https://github.com/rfetick/MPU6050_light](https://github.com/rfetick/MPU6050_light)
+5. Download and install the FastLED library from here: [https://github.com/FastLED/FastLED](https://github.com/FastLED/FastLED)
+6. Download and install the OneButton library from here: [https://github.com/mathertel/OneButton](https://github.com/mathertel/OneButton)
+7. Download and install the [TODO: DFPlayer] library from here: []()
+
 Successful installation will result in...
 
 ## Wiring Diagram

@@ -46,27 +46,46 @@ WORKING DEMO
 // Version.  Don't change unless authorized by Cranshark
 #define VERSION "0.0.1.1"
 
-// Referenced libraries
-// [TODO: Servo]
+// Uncomment to run unit tests
+#define RUN_UNIT_TESTS
 
-// [TODO: Accelerometer]
+// Referenced libraries
+// Library to make servos work
+// See: https://github.com/ArminJo/ServoEasing
+#define USE_LEIGHTWEIGHT_SERVO_LIB // Makes the servo pulse generating immune to other libraries blocking interrupts for a longer time like SoftwareSerial, Adafruit_NeoPixel and DmxSimple.
+
+#include "ServoEasing.hpp"
+
+// Libraries to make the accelerometer work
+// See: https://github.com/rfetick/MPU6050_light
+#include "Wire.h"
+#include <MPU6050_light.h>
 
 // Library to make sound work
-// See: https://wiki.dfrobot.com/DFPlayer_Mini_SKU_DFR0299#target_6
-// Important!!! The SD card needs to be formatted correctly as FAT32 or FAT16, and all MP3 files need to be named numerically 001 ... 002 ... 003
-// Download and install the DFRobotDFPlayerMini library
-#include <DFRobotDFPlayerMini.h>
+// [TODO: DFPlayer?]
 
-// [TODO: WS2812]
+// Library to make WS2812 pixels work
+// See: https://github.com/FastLED/FastLED
+#include <FastLED.h>
 
-// [TODO: Button]
+// Library to make buttons work
+// See: https://github.com/mathertel/OneButton
+#include <OneButton.h>
 
 // --- CONFIGURATIONS --- //
 // Pin configurations
-// [TODO]
+#define SERVO_VERT_PIN 9
+#define SERVO_HORIZ_PIN 10
+
+#define AUX_PIN 4
+#define PIXELS_PIN A0
+
+#define BUTTON1_PIN 2
 
 // Servo configurations
-// [TODO]
+#define START_DEGREE_VALUE  90 // The degree value written to the servo at time of attach.
+#define SERVO_SPEED 360
+#define EASING_TYPE EASE_LINEAR // default
 
 // Accelerometer configurations
 // [TODO]
@@ -75,7 +94,8 @@ WORKING DEMO
 // [TODO]
 
 // WS2812 Pixel configurations
-// [TODO]
+#define PIXELS_NUM 7
+#define PIXELS_TYPE WS2812
 
 // Button configurations
 // [TODO]
@@ -83,15 +103,114 @@ WORKING DEMO
 // --- CONFIGURATIONS END --- //
 
 // --- GLOBAL VARIABLES --- //
+// Instantiate the servo objects
+ServoEasing ServoVert;
+ServoEasing ServoHoriz;
+
+// Instantiate the accelerometer/gyroscope object
+MPU6050 mpu(Wire);
+unsigned long mpuTimer = 0;
+
+// Instantiate the array of pixels object
+CRGB pixels[PIXELS_NUM];
+
+// Instantiate the button object
+OneButton button1(BUTTON1_PIN);
 
 // --- GLOBAL VARIABLES END --- //
 
 // --- INITIALIZATION --- //
+void initServos(){
+  Serial.println(F("Initializing servos..."));
 
+  if (ServoVert.attach(SERVO_VERT_PIN, START_DEGREE_VALUE, DEFAULT_MICROSECONDS_FOR_0_DEGREE, DEFAULT_MICROSECONDS_FOR_180_DEGREE) == INVALID_SERVO) {
+        Serial.println(F("Error attaching servo vertical"));
+  }
+
+  if (ServoHoriz.attach(SERVO_HORIZ_PIN, START_DEGREE_VALUE, DEFAULT_MICROSECONDS_FOR_0_DEGREE, DEFAULT_MICROSECONDS_FOR_180_DEGREE) == INVALID_SERVO) {
+        Serial.println(F("Error attaching servo vertical"));
+  }
+
+  ServoVert.setEasingType(EASING_TYPE);
+  ServoHoriz.setEasingType(EASING_TYPE);
+
+  setSpeedForAllServos(SERVO_SPEED);
+
+  simDelayMillis(500);
+}
+
+void initGyro(){
+  Serial.println(F("Initializing gyroscope"));
+  
+  Wire.begin();
+
+  byte status = mpu.begin();
+  Serial.print(F("MPU6050 status: "));
+  Serial.println(status);
+  while(status!=0){ } // stop everything if could not connect to MPU6050
+  
+  Serial.println(F("Calculating offsets, do not move MPU6050"));
+  simDelayMillis(1000);
+  // mpu.upsideDownMounting = true; // uncomment this line if the MPU6050 is mounted upside-down
+  mpu.calcOffsets(); // gyro and accelero
+  Serial.println("Done!\n");
+}
+
+void initAuxLed(){
+  Serial.println(F("Initializing Aux LED..."));
+  pinMode(AUX_PIN, OUTPUT);
+}
+
+void initPixels(){
+  Serial.println(F("Initializing Pixels..."));
+  FastLED.addLeds<WS2812, PIXELS_PIN, RGB>(pixels, PIXELS_NUM);
+}
+
+void initButtons(){
+  Serial.println(F("Initializing Buttons..."));
+  button1.attachClick(handle_Button1_Click);
+  button1.attachDoubleClick(handle_Button1_DoubleClick);
+  button1.attachLongPressStart(handle_Button1_LongPressStart);
+  button1.attachLongPressStop(handle_Button1_LongPressStop);
+  button1.attachDuringLongPress(handle_Button1_DuringLongPress);
+}
 // --- INITIALIZATION END --- //
 
 // --- CORE FUNCTIONS --- //
+void moveServos(int posVert, int posHoriz){
+  ServoVert.setEaseTo(posVert, SERVO_SPEED);
+  ServoHoriz.setEaseTo(posHoriz, SERVO_SPEED);
+}
 
+void getAngles(){
+  mpu.update();
+  
+  if((millis() - mpuTimer) > 10){ // print data every 10ms
+    Serial.print("X : ");
+    Serial.print(mpu.getAngleX());
+    Serial.print("\tY : ");
+    Serial.print(mpu.getAngleY());
+    Serial.print("\tZ : ");
+    Serial.println(mpu.getAngleZ());
+    mpuTimer = millis();  
+  }
+}
+
+void auxLedOn(){
+  digitalWrite(AUX_PIN, HIGH);
+}
+
+void auxLedOff(){
+  digitalWrite(AUX_PIN, LOW);
+}
+
+void setPixels(int startPos, int endPos, CRGB color){
+  for(int i = startPos; i < endPos; i++){
+    pixels[i] = color;
+  }
+    
+  FastLED.show();
+}
 // --- CORE FUNCTIONS END --- //
 
 // --- SPECIAL EFFECTS --- //
@@ -99,15 +218,58 @@ WORKING DEMO
 // --- SPECIAL EFFECTS END --- //
 
 // --- EVENT HANDLERS --- //
+void handle_Button1_Click(){
+  Serial.println(F("Button1 click..."));
+  // TODO: Implement...
+}
 
+void handle_Button1_DoubleClick(){
+  Serial.println(F("Button1 double click..."));
+  // TODO: Implement...
+}
+
+void handle_Button1_LongPressStart(){
+  Serial.println(F("Button1 long press start..."));
+  // TODO: Implement...
+}
+
+void handle_Button1_LongPressStop(){
+  Serial.println(F("Button1 long press stop..."));
+  // TODO: Implement...
+}
+
+void handle_Button1_DuringLongPress(){
+  Serial.println(F("Button1 during long press..."));
+  // TODO: Implement...
+}
 // --- EVENT HANDLERS END --- //
+
+// --- MONITORING FUNCTIONS --- //
+void monitorButtons(){
+  button1.tick();
+}
+// --- MONITORING FUNCTIONS --- //
 
 /**
  * @brief Initialization method called by the Arduino library when the board boots up
  * 
  */
 void setup(){
+  Serial.begin(115200);
 
+  initServos();
+
+  initGyro();
+
+  initAuxLed();
+
+  initPixels();
+
+  initButtons();
+
+#ifdef RUN_UNIT_TESTS
+  runTests();
+#endif
 }
 
 /**
@@ -115,7 +277,7 @@ void setup(){
  * 
  */
 void loop(){
-
+  monitorButtons();
 }
 
 // --- HELPER METHODS --- //
@@ -146,64 +308,91 @@ void printVersion(){
   Serial.print(VERSION);
 }
 
-/**
- * @brief Method to output any issues with the DFPlayer
- * 
- * @param type 
- * @param value 
- */
-void printDetail(uint8_t type, int value){
-  switch (type) {
-    case TimeOut:
-      Serial.println(F("Time Out!"));
-      break;
-    case WrongStack:
-      Serial.println(F("Stack Wrong!"));
-      break;
-    case DFPlayerCardInserted:
-      Serial.println(F("Card Inserted!"));
-      break;
-    case DFPlayerCardRemoved:
-      Serial.println(F("Card Removed!"));
-      break;
-    case DFPlayerCardOnline:
-      Serial.println(F("Card Online!"));
-      break;
-    case DFPlayerPlayFinished:
-      Serial.print(F("Number:"));
-      Serial.print(value);
-      Serial.println(F(" Play Finished!"));
-      break;
-    case DFPlayerError:
-      Serial.print(F("DFPlayerError:"));
-      switch (value) {
-        case Busy:
-          Serial.println(F("Card not found"));
-          break;
-        case Sleeping:
-          Serial.println(F("Sleeping"));
-          break;
-        case SerialWrongStack:
-          Serial.println(F("Get Wrong Stack"));
-          break;
-        case CheckSumNotMatch:
-          Serial.println(F("Check Sum Not Match"));
-          break;
-        case FileIndexOut:
-          Serial.println(F("File Index Out of Bound"));
-          break;
-        case FileMismatch:
-          Serial.println(F("Cannot Find File"));
-          break;
-        case Advertise:
-          Serial.println(F("In Advertise"));
-          break;
-        default:
-          break;
-      }
-      break;
-    default:
-      break;
-  }
-}
 // --- HELPER METHODS END --- //
+
+#ifdef RUN_UNIT_TESTS
+// --- TEST METHODS --- //
+void runTests(){
+  test_moveServos();
+
+  simDelayMillis(1000);
+
+  test_AuxLedOnOff();
+
+  simDelayMillis(1000);
+
+  test_setPixels();
+
+  simDelayMillis(1000);
+
+  test_getAngles();
+}
+
+void test_moveServos(){
+  Serial.println(F("Test moveServos()"));
+
+  moveServos(0, 0);
+
+  setEaseToForAllServosSynchronizeAndStartInterrupt();
+  //while (!updateAllServos());
+
+  simDelayMillis(2000);
+
+  moveServos(180, 180);
+
+  setEaseToForAllServosSynchronizeAndStartInterrupt();
+  //while (!updateAllServos());
+
+  simDelayMillis(2000);
+
+  moveServos(90, 90);
+
+  setEaseToForAllServosSynchronizeAndStartInterrupt();
+  //while (!updateAllServos());
+
+  Serial.println(F("Test moveServos() completed."));
+}
+
+void test_getAngles(){
+  Serial.println(F("Test getAngles()"));
+
+  for (int i = 0; i < 10000; i++){
+    getAngles();
+  }
+
+  Serial.println(F("Test getAngles() completed."));
+}
+
+void test_AuxLedOnOff(){
+  Serial.println(F("Test auxLedOn() | auxLedOff()"));
+
+  for (int i = 0; i < 3; i++){
+    auxLedOn();
+
+    simDelayMillis(1000);
+
+    auxLedOff();
+
+    simDelayMillis(1000);
+  }
+
+  Serial.println(F("Test auxLedOn() | auxLedOff() completed."));
+}
+
+void test_setPixels(){
+  Serial.println(F("Test setPixels()"));
+
+  for (int i = 0; i < 3; i++){
+    setPixels(0, PIXELS_NUM, CRGB::White);
+
+    simDelayMillis(1000);
+
+    setPixels(0, PIXELS_NUM, CRGB::Black);
+
+    simDelayMillis(1000);
+  }
+
+  Serial.println(F("Test setPixels() completed."));
+}
+// --- TEST METHODS END --- //
+#endif

@@ -1,5 +1,6 @@
 {
-    "configuration": "cpu=atmega168",
+    "configuration": "cpu=atmega328",
     "board": "arduino:avr:nano",
-    "sketch": "predator_servo.ino"
+    "sketch": "predator_servo.ino",
+    "port": "/dev/tty.usbserial-1440"
 }
