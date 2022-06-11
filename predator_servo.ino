@@ -84,11 +84,13 @@ WORKING DEMO
 
 // Servo configurations
 #define START_DEGREE_VALUE  90 // The degree value written to the servo at time of attach.
-#define SERVO_SPEED 360
-#define EASING_TYPE EASE_LINEAR // default
+#define REST_DEGREE_VALUE_VERT 0 // The degree value written to the vertical servo at rest.
+#define REST_DEGREE_VALUE_HORIZ 90 // The degree value written to the horizontal servo at rest.
+#define SERVO_SPEED 360 // The speed of the servo in degrees/ms.
+#define EASING_TYPE EASE_LINEAR // The easing type servo motion, default is EASE_LINEAR.
 
 // Accelerometer configurations
-// [TODO]
+#define MPU_SAMPLE_RATE 10 // Frequency in milliseconds on how much time passes between getting values
 
 // Sound configurations
 // [TODO]
@@ -107,9 +109,33 @@ WORKING DEMO
 ServoEasing ServoVert;
 ServoEasing ServoHoriz;
 
+// Map degrees to float
+using degree = float;
+// Create a struct to hold gyro values
+struct Angles {
+  degree pitch;
+  degree roll;
+  degree yaw;
+};
+
+// Object to hold current angles values
+Angles curAngles = { 0, 0, 0 };
+
+// Create a struct to hold x, y servo degree values
+struct ServoPos {
+  int vertical;
+  int horizontal;
+};
+
+// Object to hold current servo position values
+ServoPos curServoPos = { 0, 0 };
+ServoPos prevServoPos = { 0, 0 };
+
 // Instantiate the accelerometer/gyroscope object
 MPU6050 mpu(Wire);
 unsigned long mpuTimer = 0;
+
+boolean isGyroActive = false;
 
 // Instantiate the array of pixels object
 CRGB pixels[PIXELS_NUM];
@@ -144,7 +170,8 @@ void initGyro(){
   
   Wire.begin();
 
-  byte status = mpu.begin();
+  byte status = 0;
+  mpu.begin();
   Serial.print(F("MPU6050 status: "));
   Serial.println(status);
   while(status!=0){ } // stop everything if could not connect to MPU6050
@@ -152,7 +179,8 @@ void initGyro(){
   Serial.println(F("Calculating offsets, do not move MPU6050"));
   simDelayMillis(1000);
   // mpu.upsideDownMounting = true; // uncomment this line if the MPU6050 is mounted upside-down
-  mpu.calcOffsets(); // gyro and accelero
+  mpu.calcOffsets(); // gyro and accelerometer
+
   Serial.println("Done!\n");
 }
 
@@ -178,22 +206,46 @@ void initButtons(){
 
 // --- CORE FUNCTIONS --- //
 void moveServos(int posVert, int posHoriz){
+  Serial.println(F("Moving servos..."));
+
   ServoVert.setEaseTo(posVert, SERVO_SPEED);
   ServoHoriz.setEaseTo(posHoriz, SERVO_SPEED);
 }
 
-void getAngles(){
+void moveServos(ServoPos postion){
+  moveServos(postion.vertical, postion.horizontal);
+}
+
+void detachServos(){
+  ServoVert.detach();
+  ServoHoriz.detach();
+}
+
+Angles getAngles(){
   mpu.update();
-  
-  if((millis() - mpuTimer) > 10){ // print data every 10ms
-    Serial.print("X : ");
-    Serial.print(mpu.getAngleX());
-    Serial.print("\tY : ");
-    Serial.print(mpu.getAngleY());
-    Serial.print("\tZ : ");
-    Serial.println(mpu.getAngleZ());
-    mpuTimer = millis();  
-  }
+
+  Angles angles;
+  angles.pitch = mpu.getAngleX();
+  angles.roll = mpu.getAngleY();
+  angles.yaw = mpu.getAngleZ();
+
+  return angles;
+}
+
+ServoPos getServoPositons(){
+  ServoPos servoPos;
+
+  // Map the gyro readings to servo positions in degrees 0-180
+  servoPos.vertical = map(curAngles.pitch, -90, 90, 180, 0);
+  servoPos.horizontal = map(curAngles.yaw, -90, 90, 0, 180);
+
+  // Stay within the boundaries of 0 to 180 degrees
+  servoPos.vertical = servoPos.vertical <= 180 ? servoPos.vertical : 180;
+  servoPos.vertical = servoPos.vertical >= 0 ? servoPos.vertical : 0;
+  servoPos.horizontal = servoPos.horizontal <= 180 ? servoPos.horizontal : 180;
+  servoPos.horizontal = servoPos.horizontal >= 0 ? servoPos.horizontal : 0;
+
+  return servoPos;
 }
 
 void auxLedOn(){
@@ -214,6 +266,35 @@ void setPixels(int startPos, int endPos, CRGB color){
 // --- CORE FUNCTIONS END --- //
 
 // --- SPECIAL EFFECTS --- //
+void moveServosToRestPosition(){
+  int restVert = 0;
+  int restHoriz = 90;
+
+  moveServos(restVert, restHoriz);
+
+  setEaseToForAllServosSynchronizeAndStartInterrupt();
+}
+
+void trackTarget(){
+  curAngles = getAngles();
+  curServoPos = getServoPositons();
+
+  if (prevServoPos.vertical != curServoPos.vertical){
+    moveServos(curServoPos);
+    prevServoPos.vertical = curServoPos.vertical;
+  }
+
+  if (prevServoPos.horizontal != curServoPos.horizontal){
+    moveServos(curServoPos);
+    prevServoPos.horizontal = curServoPos.horizontal;
+  }
+
+  setEaseToForAllServosSynchronizeAndStartInterrupt();
+
+  while (!updateAllServos()){
+    Serial.println("Updating servos...");
+  }
+}
 
 // --- SPECIAL EFFECTS END --- //
 
@@ -221,11 +302,28 @@ void setPixels(int startPos, int endPos, CRGB color){
 void handle_Button1_Click(){
   Serial.println(F("Button1 click..."));
   // TODO: Implement...
+
+  isGyroActive = !isGyroActive; // Toggle activating gyroscope on/off
+
+  if (isGyroActive){
+    Serial.println(F("Target tracking active..."));
+
+    // Activate servos and put them in initial position
+    initServos();
+
+    // Initialize the gyroscope and calibrate
+    initGyro();
+  } else {
+    moveServosToRestPosition();
+
+    detachServos();
+  }
 }
 
 void handle_Button1_DoubleClick(){
   Serial.println(F("Button1 double click..."));
   // TODO: Implement...
+  initGyro();
 }
 
 void handle_Button1_LongPressStart(){
@@ -247,6 +345,24 @@ void handle_Button1_DuringLongPress(){
 // --- MONITORING FUNCTIONS --- //
 void monitorButtons(){
   button1.tick();
+}
+
+void monitorGyro(){
+  if(isGyroActive){
+    if((millis() - mpuTimer) > MPU_SAMPLE_RATE){
+      curAngles = getAngles();
+
+      printAngles();
+
+      curServoPos = getServoPositons();
+
+      printServoPos();
+
+      trackTarget();
+
+      mpuTimer = millis();
+    }
+  }
 }
 // --- MONITORING FUNCTIONS --- //
 
@@ -278,6 +394,8 @@ void setup(){
  */
 void loop(){
   monitorButtons();
+
+  monitorGyro();
 }
 
 // --- HELPER METHODS --- //
@@ -308,12 +426,36 @@ void printVersion(){
   Serial.print(VERSION);
 }
 
+/**
+ * @brief Outputs the values of the current angles measured on the gyro
+ * 
+ */
+void printAngles(){
+  Serial.print(F("pitch: "));
+  Serial.print(curAngles.pitch);
+  Serial.print(F("\troll: "));
+  Serial.print(curAngles.roll);
+  Serial.print(F("\tyaw: "));
+  Serial.println(curAngles.yaw);
+}
+
+void printServoPos(){
+  Serial.print(F("vertical: "));
+  Serial.print(curServoPos.vertical);
+  Serial.print(F("\thorizontal: "));
+  Serial.println(curServoPos.horizontal);
+}
+
 // --- HELPER METHODS END --- //
 
 #ifdef RUN_UNIT_TESTS
 // --- TEST METHODS --- //
 void runTests(){
   test_moveServos();
+
+  simDelayMillis(1000);
+
+  test_moveServosToRestPosition();
 
   simDelayMillis(1000);
 
@@ -326,6 +468,10 @@ void runTests(){
   simDelayMillis(1000);
 
   test_getAngles();
+
+  simDelayMillis(1000);
+
+  test_getServoPositons();
 }
 
 void test_moveServos(){
@@ -350,17 +496,67 @@ void test_moveServos(){
   setEaseToForAllServosSynchronizeAndStartInterrupt();
   //while (!updateAllServos());
 
+  simDelayMillis(500);
+
+  detachServos();
+
   Serial.println(F("Test moveServos() completed."));
+}
+
+void test_moveServosToRestPosition(){
+  Serial.println(F("Test moveServosToRestPosition()"));
+
+  initServos();
+
+  moveServosToRestPosition();
+
+  simDelayMillis(2000);
+
+  moveServos(90, 90);
+
+  setEaseToForAllServosSynchronizeAndStartInterrupt();
+
+  simDelayMillis(500);
+
+  detachServos();
+
+  Serial.println(F("Test moveServosToRestPosition() completed."));
 }
 
 void test_getAngles(){
   Serial.println(F("Test getAngles()"));
 
-  for (int i = 0; i < 10000; i++){
-    getAngles();
+  for (int i = 0; i < 100; i++){
+    curAngles = getAngles();
+
+    printAngles();
+
+    simDelayMillis(10);
   }
 
+  simDelayMillis(200);
+
   Serial.println(F("Test getAngles() completed."));
+}
+
+void test_getServoPositons(){
+  Serial.println(F("Test getServoPositons()"));
+
+  for (int i = 0; i < 100; i++){
+    curAngles = getAngles();
+
+    printAngles();
+
+    curServoPos = getServoPositons();
+
+    printServoPos();
+
+    simDelayMillis(10);
+  }
+
+  simDelayMillis(200);
+
+  Serial.println(F("Test getServoPositons() completed."));
 }
 
 void test_AuxLedOnOff(){
