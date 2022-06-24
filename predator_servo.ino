@@ -72,8 +72,6 @@ WORKING DEMO
 
 #include <DFPlayer.h>
 #include <SoftwareSerial.h>
-
-void printDetail(uint8_t type, int value); // header method for implementation below; affects C++ compilers
 #endif
 
 // Library to make WS2812 pixels work
@@ -151,6 +149,7 @@ struct Angles {
 
 // Object to hold current angles values
 Angles curAngles = { 0, 0, 0 };
+Angles prevAngles = { 0, 0, 0 };
 
 // Create a struct to hold x, y servo degree values
 struct ServoPos {
@@ -216,7 +215,10 @@ void initGyro(){
   Serial.println(F("Calculating offsets, do not move MPU6050"));
   simDelayMillis(1000);
   // gyroObj.upsideDownMounting = true; // uncomment this line if the MPU6050 is mounted upside-down
+  
   gyroObj.calcOffsets(); // gyro and accelerometer
+
+  prevAngles = getAngles();
 
   Serial.println("Done!\n");
 
@@ -303,10 +305,12 @@ Angles getAngles(){
 ServoPos getServoPositons(){
   ServoPos servoPos;
 
-  // Map the gyro readings to servo positions in degrees 0-180
-  curAngles.yaw = curAngles.yaw >= -90 ? curAngles.yaw : -90;
-  curAngles.yaw = curAngles.yaw <= 90 ? curAngles.yaw : 90;
+  // Compensate for gyro drift over usage
+  // NOTE: rapid movements (i.e. big accelerometer actions) tend to increase drift...
+  curAngles.pitch = prevAngles.pitch >= 0 ? curAngles.pitch - prevAngles.pitch : curAngles.pitch + prevAngles.pitch;
+  curAngles.yaw = prevAngles.yaw >= 0 ? curAngles.yaw - prevAngles.yaw : curAngles.yaw + prevAngles.yaw;
 
+  // Map the gyro readings to servo positions in degrees 0-180
   servoPos.vertical = map(curAngles.pitch, -90, 90, 180, 0);
   servoPos.horizontal = map(curAngles.yaw, -90, 90, 0, 180);
 
