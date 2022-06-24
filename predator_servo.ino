@@ -70,7 +70,7 @@ WORKING DEMO
 // Important!!! On the SD card copy the mp3 files into an mp3 directory
 // Download and install the DFRobotDFPlayerMini library
 
-#include <DFRobotDFPlayerMini.h>
+#include <DFPlayer.h>
 #include <SoftwareSerial.h>
 
 void printDetail(uint8_t type, int value); // header method for implementation below; affects C++ compilers
@@ -88,6 +88,9 @@ void printDetail(uint8_t type, int value); // header method for implementation b
 // Pin configurations
 #define SERVO_VERT_PIN 9
 #define SERVO_HORIZ_PIN 10
+
+#define EYE_LEFT_PIN 6
+#define EYE_RIGHT_PIN 3
 
 #define AUX_PIN 4
 #define PIXELS_PIN A0
@@ -109,11 +112,23 @@ void printDetail(uint8_t type, int value); // header method for implementation b
 // sound board pins
 #define RX_PIN 7 // set pin for receive (RX) communications
 #define TX_PIN 8 // set pin for transmit (TX) communications
+#define VOLUME 29 // sound board volume level (30 is max)
+#define MP3_TYPE DFPLAYER_MINI // Chip type of DFPlayerMini (see documentation)
+#define MP3_SERIAL_TIMEOUT 100 //average DFPlayer response timeout 100msec..200msec
+
+// TODO: Sound effects for predator
+#define SND_CANNON 1 // sound track for helmet closing sound
+#define SND_GROWL 2 // sound track for JARVIS sound
+#define SND_ROAR 3 // sound track for helmet opening sound
 #endif
 
 // WS2812 Pixel configurations
 #define PIXELS_NUM 7
+#define PIXELS_COLOR CRGB(253,255,249)
 #define PIXELS_TYPE WS2812
+
+// LED eye configurations
+#define EYE_LED_MAX_BRIGHTNESS 200 // Range 0-255 (PWM)
 
 // Button configurations
 // [TODO]
@@ -161,14 +176,8 @@ OneButton button1(BUTTON1_PIN);
 
 #ifdef SOUND
 // Declare variables for sound control
-const int volume = 29; // sound board volume level (30 is max)
-// TODO: Sound effects for predator
-#define SND_CLOSE 1 // sound track for helmet closing sound
-#define SND_JARVIS 2 // sound track for JARVIS sound
-#define SND_OPEN 3 // sound track for helmet opening sound
-
 SoftwareSerial serialObj(RX_PIN, TX_PIN); // Create object for serial communications
-DFRobotDFPlayerMini mp3Obj; // Create object for DFPlayer Mini
+DFPlayer mp3Obj; // Create object for DFPlayer Mini
 #endif
 
 // --- GLOBAL VARIABLES END --- //
@@ -219,39 +228,29 @@ void initGyro(){
  * Initialization method for DFPlayer Mini board
  */
  void initPlayer(){
-  serialObj.begin(9600);
-  //simDelayMillis(1000); Adjusting Timing Sequence
-
-  if(!serialObj.available()){
-    Serial.println(F("Serial object not available."));
-  }
-
   Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
 
-  bool dfInit = mp3Obj.begin(serialObj, false, true);
+  serialObj.begin(9600);
 
-  simDelayMillis(1000);
-  
-  if(!dfInit){
-    Serial.println(F("Unable to begin:"));
-    Serial.println(F("1.Please recheck the connection!"));
-    Serial.println(F("2.Please insert the SD card!"));
+  mp3Obj.begin(serialObj, MP3_SERIAL_TIMEOUT, MP3_TYPE, false);
 
-    dfInit = mp3Obj.begin(serialObj, false, true);
-    simDelayMillis(400); // originally 1000ms
-  }
+  mp3Obj.stop();        //if player was runing during ESP8266 reboot
+  mp3Obj.reset();       //reset all setting to default
+  
+  mp3Obj.setSource(2);  //1=USB-Disk, 2=TF-Card, 3=Aux, 4=Sleep, 5=NOR Flash
+  
+  mp3Obj.setEQ(0);      //0=Off, 1=Pop, 2=Rock, 3=Jazz, 4=Classic, 5=Bass
+  mp3Obj.setVolume(VOLUME); //0..30, module persists volume on power failure
 
-  Serial.println(F("DFPlayer Mini online."));
-  
-  mp3Obj.setTimeOut(500); //Set serial communictaion time out 500ms
-  
-  Serial.println(F("Setting volume"));
-  mp3Obj.volume(volume);
-  
-  mp3Obj.EQ(DFPLAYER_EQ_NORMAL);
-  mp3Obj.outputDevice(DFPLAYER_DEVICE_SD);
+  mp3Obj.sleep();       //inter sleep mode, 24mA
  }
  #endif
+
+void initEyeLeds(){
+  Serial.println(F("Initializing LED eyes..."));
+  pinMode(EYE_LEFT_PIN, OUTPUT);
+  pinMode(EYE_RIGHT_PIN, OUTPUT);
+}
 
 void initAuxLed(){
   Serial.println(F("Initializing Aux LED..."));
@@ -325,15 +324,27 @@ ServoPos getServoPositons(){
  * Method to play the sound effect for a specified feature
  */
 void playSoundEffect(int soundEffect){
-  mp3Obj.volume(volume);
   Serial.print(F("Playing sound effect: "));
-  Serial.print(soundEffect);
-  Serial.print(F("\tVolume: "));
-  Serial.println(mp3Obj.readVolume());
-  mp3Obj.play(soundEffect);
-  printDetail(mp3Obj.readType(), mp3Obj.read()); //Print the detail message from DFPlayer to handle different errors and states.
+  Serial.println(soundEffect);
+
+  mp3Obj.wakeup(2);
+
+  mp3Obj.playTrack(soundEffect);
 }
 #endif
+
+void setLedEyes(int pwmValue){
+  analogWrite(EYE_LEFT_PIN, pwmValue);
+  analogWrite(EYE_RIGHT_PIN, pwmValue);
+}
+
+void eyeLedsOn(){
+  setLedEyes(EYE_LED_MAX_BRIGHTNESS);
+}
+
+void eyeLedsOff(){
+  setLedEyes(0);
+}
 
 void auxLedOn(){
   digitalWrite(AUX_PIN, HIGH);
@@ -379,7 +390,7 @@ void trackTarget(){
   setEaseToForAllServosSynchronizeAndStartInterrupt();
 
   while (!updateAllServos()){
-    //Serial.println("Updating servos...");
+    //
   }
 }
 
@@ -465,6 +476,8 @@ void setup(){
   initServos();
 
   initGyro();
+
+  initEyeLeds();
 
   initAuxLed();
 
@@ -552,66 +565,6 @@ void printGyroOffsets(){
   Serial.println(mpu.getGyroZoffset());
 }
 
-#ifdef SOUND
-/**
- * Method to output any issues with the DFPlayer
- */
-void printDetail(uint8_t type, int value){
-  switch (type) {
-    case TimeOut:
-      Serial.println(F("Time Out!"));
-      break;
-    case WrongStack:
-      Serial.println(F("Stack Wrong!"));
-      break;
-    case DFPlayerCardInserted:
-      Serial.println(F("Card Inserted!"));
-      break;
-    case DFPlayerCardRemoved:
-      Serial.println(F("Card Removed!"));
-      break;
-    case DFPlayerCardOnline:
-      Serial.println(F("Card Online!"));
-      break;
-    case DFPlayerPlayFinished:
-      Serial.print(F("Number:"));
-      Serial.print(value);
-      Serial.println(F(" Play Finished!"));
-      break;
-    case DFPlayerError:
-      Serial.print(F("DFPlayerError:"));
-      switch (value) {
-        case Busy:
-          Serial.println(F("Card not found"));
-          break;
-        case Sleeping:
-          Serial.println(F("Sleeping"));
-          break;
-        case SerialWrongStack:
-          Serial.println(F("Get Wrong Stack"));
-          break;
-        case CheckSumNotMatch:
-          Serial.println(F("Check Sum Not Match"));
-          break;
-        case FileIndexOut:
-          Serial.println(F("File Index Out of Bound"));
-          break;
-        case FileMismatch:
-          Serial.println(F("Cannot Find File"));
-          break;
-        case Advertise:
-          Serial.println(F("In Advertise"));
-          break;
-        default:
-          break;
-      }         
-      break;
-    default:
-      break;
-  }
-}
-#endif
-
 // --- HELPER METHODS END --- //
 
 #ifdef RUN_UNIT_TESTS
@@ -626,6 +579,10 @@ void runTests(){
   simDelayMillis(1000);
 
   test_playSoundEffect();
+
+  simDelayMillis(1000);
+
+  test_ledEyesOnOff();
 
   simDelayMillis(1000);
 
@@ -650,21 +607,18 @@ void test_moveServos(){
   moveServos(0, 0);
 
   setEaseToForAllServosSynchronizeAndStartInterrupt();
-  //while (!updateAllServos());
 
   simDelayMillis(2000);
 
   moveServos(180, 180);
 
   setEaseToForAllServosSynchronizeAndStartInterrupt();
-  //while (!updateAllServos());
 
   simDelayMillis(2000);
 
   moveServos(90, 90);
 
   setEaseToForAllServosSynchronizeAndStartInterrupt();
-  //while (!updateAllServos());
 
   simDelayMillis(500);
 
@@ -740,6 +694,22 @@ void test_playSoundEffect(){
   Serial.println(F("Test playSoundEffect() completed."));
 }
 
+void test_ledEyesOnOff(){
+  Serial.println(F("Test ledEyesOn() | ledEyesOff()"));
+
+  for (int i = 0; i < 3; i++){
+    eyeLedsOn();
+
+    simDelayMillis(1000);
+
+    eyeLedsOff();
+
+    simDelayMillis(1000);
+  }
+
+  Serial.println(F("Test ledEyesOn() | ledEyesOff() completed."));
+}
+
 void test_AuxLedOnOff(){
   Serial.println(F("Test auxLedOn() | auxLedOff()"));
 
@@ -760,7 +730,7 @@ void test_setPixels(){
   Serial.println(F("Test setPixels()"));
 
   for (int i = 0; i < 3; i++){
-    setPixels(0, PIXELS_NUM, CRGB::White);
+    setPixels(0, PIXELS_NUM, PIXELS_COLOR);
 
     simDelayMillis(1000);
 
