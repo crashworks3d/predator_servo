@@ -163,7 +163,7 @@ ServoPos curServoPos = { 0, 0 };
 ServoPos prevServoPos = { 0, 0 };
 
 // Instantiate the accelerometer/gyroscope object
-MPU6050 mpu(Wire);
+MPU6050 gyroObj(Wire);
 unsigned long mpuTimer = 0;
 
 boolean isGyroActive = false;
@@ -208,15 +208,15 @@ void initGyro(){
   Wire.begin();
 
   byte status = 0;
-  mpu.begin();
+  gyroObj.begin();
   Serial.print(F("MPU6050 status: "));
   Serial.println(status);
   while(status!=0){ } // stop everything if could not connect to MPU6050
   
   Serial.println(F("Calculating offsets, do not move MPU6050"));
   simDelayMillis(1000);
-  // mpu.upsideDownMounting = true; // uncomment this line if the MPU6050 is mounted upside-down
-  mpu.calcOffsets(); // gyro and accelerometer
+  // gyroObj.upsideDownMounting = true; // uncomment this line if the MPU6050 is mounted upside-down
+  gyroObj.calcOffsets(); // gyro and accelerometer
 
   Serial.println("Done!\n");
 
@@ -290,12 +290,12 @@ void detachServos(){
 }
 
 Angles getAngles(){
-  mpu.update();
+  gyroObj.update();
 
   Angles angles;
-  angles.pitch = mpu.getAngleX();
-  angles.roll = mpu.getAngleY();
-  angles.yaw = mpu.getAngleZ();
+  angles.pitch = gyroObj.getAngleX();
+  angles.roll = gyroObj.getAngleY();
+  angles.yaw = gyroObj.getAngleZ();
 
   return angles;
 }
@@ -551,18 +551,18 @@ void printServoPos(){
 
 void printGyroOffsets(){
   Serial.print(F("AccXoffset: "));
-  Serial.print(mpu.getAccXoffset());
+  Serial.print(gyroObj.getAccXoffset());
   Serial.print(F("\tAccYoffset: "));
-  Serial.print(mpu.getAccYoffset());
+  Serial.print(gyroObj.getAccYoffset());
   Serial.print(F("\tAccZoffset: "));
-  Serial.print(mpu.getAccZoffset());
+  Serial.print(gyroObj.getAccZoffset());
 
   Serial.print(F("\tGyroXoffset: "));
-  Serial.print(mpu.getGyroXoffset());
+  Serial.print(gyroObj.getGyroXoffset());
   Serial.print(F("\tGyroYoffset: "));
-  Serial.print(mpu.getGyroYoffset());
+  Serial.print(gyroObj.getGyroYoffset());
   Serial.print(F("\tGyroZoffset: "));
-  Serial.println(mpu.getGyroZoffset());
+  Serial.println(gyroObj.getGyroZoffset());
 }
 
 // --- HELPER METHODS END --- //
