@@ -91,9 +91,10 @@ WORKING DEMO
 #define EYE_RIGHT_PIN 3
 
 #define AUX_PIN 4
-#define PIXELS_PIN A0
+#define PIXELS_PIN A1
 
 #define BUTTON1_PIN 2
+#define BUTTON2_PIN A0
 
 // Servo configurations
 #define START_DEGREE_VALUE  90 // The degree value written to the servo at time of attach.
@@ -114,10 +115,11 @@ WORKING DEMO
 #define MP3_TYPE DFPLAYER_MINI // Chip type of DFPlayerMini (see documentation)
 #define MP3_SERIAL_TIMEOUT 100 //average DFPlayer response timeout 100msec..200msec
 
-// TODO: Sound effects for predator
-#define SND_CANNON 1 // sound track for helmet closing sound
-#define SND_GROWL 2 // sound track for JARVIS sound
-#define SND_ROAR 3 // sound track for helmet opening sound
+// Sound effects for predator
+#define SND_CANNON 1 // sound track for cannon firing sound
+#define SND_GROWL 2 // sound track for growl sound
+#define SND_SCREAM 3 // sound track for scream sound
+#define SND_EYES_FLASH 4 // sound track for eyes flashing sound
 #endif
 
 // WS2812 Pixel configurations
@@ -127,6 +129,7 @@ WORKING DEMO
 
 // LED eye configurations
 #define EYE_LED_MAX_BRIGHTNESS 200 // Range 0-255 (PWM)
+#define EYES_INCREMENT 20
 
 // Button configurations
 // [TODO]
@@ -172,12 +175,16 @@ CRGB pixels[PIXELS_NUM];
 
 // Instantiate the button object
 OneButton button1(BUTTON1_PIN);
+OneButton button2(BUTTON2_PIN);
 
 #ifdef SOUND
 // Declare variables for sound control
 SoftwareSerial serialObj(RX_PIN, TX_PIN); // Create object for serial communications
 DFPlayer mp3Obj; // Create object for DFPlayer Mini
 #endif
+
+int curEyesBrightness = 0;  // Keep track of how bright the eyes are for the dimmer
+bool eyeDimmerDir = true; // Keep track of dimmer direction (true = increase | false = decrease)
 
 // --- GLOBAL VARIABLES END --- //
 
@@ -268,9 +275,14 @@ void initButtons(){
   Serial.println(F("Initializing Buttons..."));
   button1.attachClick(handle_Button1_Click);
   button1.attachDoubleClick(handle_Button1_DoubleClick);
-  button1.attachLongPressStart(handle_Button1_LongPressStart);
-  button1.attachLongPressStop(handle_Button1_LongPressStop);
-  button1.attachDuringLongPress(handle_Button1_DuringLongPress);
+  // button1.attachLongPressStart(handle_Button1_LongPressStart);
+  // button1.attachLongPressStop(handle_Button1_LongPressStop);
+  // button1.attachDuringLongPress(handle_Button1_DuringLongPress);
+
+  button2.attachClick(handle_Button2_Click);
+  button2.attachDoubleClick(handle_Button2_DoubleClick);
+  button2.attachMultiClick(handle_Button2_MultiClick);
+  button2.attachDuringLongPress(handle_Button2_LongPress);
 }
 // --- INITIALIZATION END --- //
 
@@ -365,19 +377,65 @@ void setPixels(int startPos, int endPos, CRGB color){
     
   FastLED.show();
 }
+
+void pixelsBrighten(){
+  int r, g, b;
+  r = PIXELS_COLOR.r;
+  g = PIXELS_COLOR.g;
+  b = PIXELS_COLOR.b;
+
+  for (float i = 1; i <= 100; i++){
+      float brightness = i/100;
+      setPixels(0, PIXELS_NUM, {r * brightness, g * brightness, b * brightness});
+
+      simDelayMillis(12);
+  }
+}
+
+void pixelsOn(){
+  setPixels(0, PIXELS_NUM, PIXELS_COLOR);
+}
+
+void pixelsOff(){
+  setPixels(0, PIXELS_NUM, {0,0,0});
+}
 // --- CORE FUNCTIONS END --- //
 
 // --- SPECIAL EFFECTS --- //
-void moveServosToRestPosition(){
+void plasmaCannonDeactivate(){
   int restVert = 0;
   int restHoriz = 90;
 
   moveServos(restVert, restHoriz);
 
   setEaseToForAllServosSynchronizeAndStartInterrupt();
+
+  auxLedOff();
+
+  while (!updateAllServos()){
+    //
+  }
+
+  isGyroActive = false; // Toggle activating gyroscope off
+  
+  detachServos();
+
+  Serial.println(F("Plasma cannon deactivated."));
 }
 
-void trackTarget(){
+void plasmaCannonActivate(){
+  Serial.println(F("Plasma cannon active!!!"));
+
+  isGyroActive = true; // Toggle activating gyroscope on
+
+  // Activate servos and put them in initial position
+  initServos();
+
+  // Initialize the gyroscope and calibrate
+  initGyro();
+}
+
+void plasmaCannonTracking(){
   curAngles = getAngles();
   curServoPos = getServoPositons();
 
@@ -396,36 +454,92 @@ void trackTarget(){
   while (!updateAllServos()){
     //
   }
+
+  auxLedOn();
+}
+
+void plasmaCannonFire(){
+  Serial.println(F("Plasma cannon FIRE!!!"));
+
+  playSoundEffect(SND_CANNON);
+
+  simDelayMillis(200);
+
+  pixelsBrighten();
+
+  pixelsOff();
+}
+
+void eyesFlash(){
+  Serial.println(F("Flashing eyes..."));
+
+  playSoundEffect(SND_EYES_FLASH);
+
+  eyeLedsOn();
+
+  simDelayMillis(200);
+
+  eyeLedsOff();
+}
+
+void eyesDimmer(){
+  Serial.println(F("Eyes dimmer..."));
+
+  curEyesBrightness = eyeDimmerDir ? curEyesBrightness + EYES_INCREMENT : curEyesBrightness - EYES_INCREMENT;
+
+  if(curEyesBrightness >= EYE_LED_MAX_BRIGHTNESS){
+    eyeDimmerDir = false;
+    curEyesBrightness = EYE_LED_MAX_BRIGHTNESS;
+  }
+
+  if (curEyesBrightness <= 0){
+    eyeDimmerDir = false;
+    curEyesBrightness = 0;
+  }
+
+  setLedEyes(curEyesBrightness);
+}
+
+void soundGrowl(){
+  Serial.println(F("Growl..."));
+
+  playSoundEffect(SND_GROWL);
+
+  simDelayMillis(400);
+}
+
+void soundScream(){
+  Serial.println(F("Scream..."));
+
+  playSoundEffect(SND_SCREAM);
+
+  simDelayMillis(400);
+}
+
+void startupFx(){
+  Serial.println(F("Startup FX..."));
+  plasmaCannonDeactivate();
+
+  eyesFlash();
 }
 
 // --- SPECIAL EFFECTS END --- //
 
 // --- EVENT HANDLERS --- //
 void handle_Button1_Click(){
-  Serial.println(F("Button1 click..."));
-  // TODO: Implement...
-
-  isGyroActive = !isGyroActive; // Toggle activating gyroscope on/off
-
-  if (isGyroActive){
-    Serial.println(F("Target tracking active..."));
-
-    // Activate servos and put them in initial position
-    initServos();
-
-    // Initialize the gyroscope and calibrate
-    initGyro();
+  Serial.println(F("Button1 single press..."));
+  
+  if (!isGyroActive){
+    plasmaCannonActivate();
   } else {
-    moveServosToRestPosition();
-
-    detachServos();
+    plasmaCannonFire();
   }
 }
 
 void handle_Button1_DoubleClick(){
   Serial.println(F("Button1 double click..."));
-  // TODO: Implement...
-  initGyro();
+
+  plasmaCannonDeactivate();
 }
 
 void handle_Button1_LongPressStart(){
@@ -442,11 +556,41 @@ void handle_Button1_DuringLongPress(){
   Serial.println(F("Button1 during long press..."));
   // TODO: Implement...
 }
+
+void handle_Button2_Click(){
+  Serial.println(F("Button2 single press..."));
+  eyesFlash();
+}
+
+void handle_Button2_DoubleClick(){
+  Serial.println(F("Button2 double press..."));
+  soundGrowl();
+}
+
+void handle_Button2_MultiClick(){
+  Serial.println(F("Button2 multi press..."));
+  
+  int clicks = button2.getNumberClicks();
+
+  Serial.print(F("Button presses: "));
+  Serial.println(clicks);
+
+  if (clicks == 3) {
+    soundScream();
+  }
+}
+
+void handle_Button2_LongPress(){
+  Serial.println(F("Button2 long press..."));
+  
+  eyesDimmer();
+}
 // --- EVENT HANDLERS END --- //
 
 // --- MONITORING FUNCTIONS --- //
 void monitorButtons(){
   button1.tick();
+  button2.tick();
 }
 
 void monitorGyro(){
@@ -460,7 +604,7 @@ void monitorGyro(){
 
       // printServoPos();
 
-      trackTarget();
+      plasmaCannonTracking();
 
       mpuTimer = millis();
     }
@@ -492,6 +636,8 @@ void setup(){
 #ifdef RUN_UNIT_TESTS
   runTests();
 #endif
+
+  startupFx();
 }
 
 /**
