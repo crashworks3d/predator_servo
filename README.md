@@ -47,8 +47,6 @@ https://www.thingiverse.com/thing:4056653
 
 * Be sure to have the Arduino Nano board installed in your environment.
 
-[TODO: more stuff...]
-
 ### Installing
 
 1.  In the Arduino IDE be sure to set the appropriate board (Arduino Nano) and ports to match your environment.
