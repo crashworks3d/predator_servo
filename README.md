@@ -10,7 +10,7 @@ are notated in this document.
 
 Moe's Project: http://www.moesizzlac.com/projects-predator.php
 
-[TODO: Links, videos...]
+YouTube Demo: [https://www.youtube.com/watch?v=h-8c63qdrVE](https://www.youtube.com/watch?v=h-8c63qdrVE)
 
 ## Follow Us
 
