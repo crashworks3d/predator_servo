@@ -93,7 +93,7 @@ Version Aplha 0.1 (Use at your own risk)
 
 * **Cranshark @ i3 Creations**
 
-* **Taff
+* **Taff**
 
 ## License
 
