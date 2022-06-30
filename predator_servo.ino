@@ -66,7 +66,8 @@ WORKING DEMO
 
 // Library to make sound work
 #ifdef SOUND
-// See: https://wiki.dfrobot.com/DFPlayer_Mini_SKU_DFR0299#target_6
+// Install: https://github.com/enjoyneering/DFPlayer
+// See: https://wiki.dfrobot.com/DFPlayer_Mini_SKU_DFR0299
 // Important!!! On the SD card copy the mp3 files into an mp3 directory
 // Download and install the DFRobotDFPlayerMini library
 

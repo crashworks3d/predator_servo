@@ -61,9 +61,9 @@ See: [https://code.visualstudio.com/](https://code.visualstudio.com/) using the 
 4. Download and install the `MPU6050_light` library from here: [https://github.com/rfetick/MPU6050_light](https://github.com/rfetick/MPU6050_light)
 5. Download and install the `FastLED` library from here: [https://github.com/FastLED/FastLED](https://github.com/FastLED/FastLED)
 6. Download and install the `OneButton` library from here: [https://github.com/mathertel/OneButton](https://github.com/mathertel/OneButton)
-7. Download and install the [TODO: DFPlayer] library from here: []()
+7. Download and install the `DFPlayer` library from here: [https://github.com/enjoyneering/DFPlayer](https://github.com/enjoyneering/DFPlayer)
 
-Successful installation will result in...
+Successful installation will result in a sketch build without errors
 
 ## Wiring Diagram
 
