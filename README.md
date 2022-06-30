@@ -73,11 +73,14 @@ Successful installation will result in a sketch build without errors
 [TODO: breadboard image...]
 
 ## BOM - A.L.I.S.H.A.
-Most components can be found on [Amazon](https://www.amazon.com) or [AliExpress](https://www.aliexpress.com)
-* Arduino Nano
-* MG995s Servo (metal gear only!)
+Most components can be found on [Amazon](https://www.amazon.com), [eBay](https://www.ebay.com) or [AliExpress](https://www.aliexpress.com)
+* Crashworks 3D A.L.I.S.H.A. module with Arduino Nano: eBay Links: [https://linktr.ee/crashworks3d](https://linktr.ee/crashworks3d)
+* GY-521 Gyroscope module
 * Cosplay Iron Man/Batman LEDs (can be found on eBay or AliExpress)
-* [TODO: more stuff...]
+* 3 Watt 8 ohm speaker or external powered speaker (recommended)
+* Micro SD Card
+* USB Power Supply (5 volts 2 amps recommended)
+* 2x Momentary Switch
 
 ## Built With
 
@@ -85,7 +88,7 @@ Most components can be found on [Amazon](https://www.amazon.com) or [AliExpress]
 
 ## Versioning
 
-Version Aplha 0.1 (Use at your own risk) 
+Version Alpha 0.1 (Use at your own risk) 
 
 ## Authors
 
