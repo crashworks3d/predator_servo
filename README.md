@@ -69,7 +69,6 @@ Successful installation will result in a sketch build without errors
 
 ![Predator Wiring Diagram](images/Predator_Wiring_Diagram_v1.0.jpg)
 
-
 ## BOM - A.L.I.S.H.A.
 Most components can be found on [Amazon](https://www.amazon.com), [eBay](https://www.ebay.com) or [AliExpress](https://www.aliexpress.com)
 * Crashworks 3D A.L.I.S.H.A. module with Arduino Nano: eBay Links: [https://linktr.ee/crashworks3d](https://linktr.ee/crashworks3d)
