@@ -67,16 +67,15 @@ Successful installation will result in a sketch build without errors
 
 ## Wiring Diagram
 
-[TODO: wiring image...]
+![Predator Wiring Diagram](images/Predator_Wiring_Diagram_v1.0.jpg)
 
-## Breadboard Example
-[TODO: breadboard image...]
 
 ## BOM - A.L.I.S.H.A.
 Most components can be found on [Amazon](https://www.amazon.com), [eBay](https://www.ebay.com) or [AliExpress](https://www.aliexpress.com)
 * Crashworks 3D A.L.I.S.H.A. module with Arduino Nano: eBay Links: [https://linktr.ee/crashworks3d](https://linktr.ee/crashworks3d)
 * GY-521 Gyroscope module
 * Cosplay Iron Man/Batman LEDs (can be found on eBay or AliExpress)
+* 2x MG995 Servo
 * 3 Watt 8 ohm speaker or external powered speaker (recommended)
 * Micro SD Card
 * USB Power Supply (5 volts 2 amps recommended)
