@@ -99,7 +99,7 @@ WORKING DEMO
 
 // Servo configurations
 #define START_DEGREE_VALUE  90 // The degree value written to the servo at time of attach.
-#define REST_DEGREE_VALUE_VERT 0 // The degree value written to the vertical servo at rest.
+#define REST_DEGREE_VALUE_VERT 180 // The degree value written to the vertical servo at rest.
 #define REST_DEGREE_VALUE_HORIZ 90 // The degree value written to the horizontal servo at rest.
 #define SERVO_SPEED 360 // The speed of the servo in degrees/ms.
 #define EASING_TYPE EASE_LINEAR // The easing type servo motion, default is EASE_LINEAR.
@@ -198,7 +198,7 @@ void initServos(){
   }
 
   if (ServoHoriz.attach(SERVO_HORIZ_PIN, START_DEGREE_VALUE, DEFAULT_MICROSECONDS_FOR_0_DEGREE, DEFAULT_MICROSECONDS_FOR_180_DEGREE) == INVALID_SERVO) {
-        Serial.println(F("Error attaching servo vertical"));
+        Serial.println(F("Error attaching servo horizontal"));
   }
 
   ServoVert.setEasingType(EASING_TYPE);
@@ -324,7 +324,7 @@ ServoPos getServoPositons(){
   curAngles.yaw = prevAngles.yaw >= 0 ? curAngles.yaw - prevAngles.yaw : curAngles.yaw + prevAngles.yaw;
 
   // Map the gyro readings to servo positions in degrees 0-180
-  servoPos.vertical = map(curAngles.pitch, -90, 90, 180, 0);
+  servoPos.vertical = map(curAngles.pitch, -90, 90, 0, 180);
   servoPos.horizontal = map(curAngles.yaw, -90, 90, 0, 180);
 
   // Stay within the boundaries of 0 to 180 degrees
@@ -404,10 +404,7 @@ void pixelsOff(){
 
 // --- SPECIAL EFFECTS --- //
 void plasmaCannonDeactivate(){
-  int restVert = 0;
-  int restHoriz = 90;
-
-  moveServos(restVert, restHoriz);
+  moveServos(REST_DEGREE_VALUE_VERT, REST_DEGREE_VALUE_HORIZ);
 
   setEaseToForAllServosSynchronizeAndStartInterrupt();
 
