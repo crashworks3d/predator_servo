@@ -50,7 +50,7 @@ WORKING DEMO
 #define SOUND
 
 // Uncomment to run unit tests
-// #define RUN_UNIT_TESTS
+#define RUN_UNIT_TESTS
 
 // Referenced libraries
 // Library to make servos work
@@ -780,7 +780,7 @@ void test_moveServosToRestPosition(){
 
   initServos();
 
-  moveServosToRestPosition();
+  plasmaCannonDeactivate();
 
   simDelayMillis(2000);
 
