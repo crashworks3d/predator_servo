@@ -105,7 +105,7 @@ WORKING DEMO
 #define EASING_TYPE EASE_LINEAR // The easing type servo motion, default is EASE_LINEAR.
 
 // Accelerometer configurations
-#define MPU_SAMPLE_RATE 100 // Frequency in milliseconds on how much time passes between getting values
+#define MPU_SAMPLE_RATE 60 // Optiomal frequency in milliseconds on how much time passes between getting values
 
 // Sound configurations
 #ifdef SOUND
