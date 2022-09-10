@@ -112,7 +112,7 @@ WORKING DEMO
 // sound board pins
 #define RX_PIN 7 // set pin for receive (RX) communications
 #define TX_PIN 8 // set pin for transmit (TX) communications
-#define VOLUME 29 // sound board volume level (30 is max)
+#define VOLUME 25 // sound board volume level (30 is max)
 #define MP3_TYPE DFPLAYER_MINI // Chip type of DFPlayerMini (see documentation)
 #define MP3_SERIAL_TIMEOUT 100 //average DFPlayer response timeout 100msec..200msec
 
