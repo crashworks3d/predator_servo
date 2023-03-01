@@ -44,10 +44,13 @@ WORKING DEMO
 */
 
 // Version.  Don't change unless authorized by Cranshark
-#define VERSION "0.0.1.1"
+#define VERSION "0.0.3.1"
 
 // Uncomment this line to enable sound
 #define SOUND
+
+// Uncomment this to enable serial output for debugging
+// #define DEBUG
 
 // Uncomment to run unit tests
 // #define RUN_UNIT_TESTS
@@ -66,12 +69,8 @@ WORKING DEMO
 
 // Library to make sound work
 #ifdef SOUND
-// Install: https://github.com/enjoyneering/DFPlayer
-// See: https://wiki.dfrobot.com/DFPlayer_Mini_SKU_DFR0299
-// Important!!! On the SD card copy the mp3 files into an mp3 directory
-// Download and install the DFRobotDFPlayerMini library
-
-#include <DFPlayer.h>
+// For installation instructions see: https://github.com/sleemanj/JQ6500_Serial
+#include <JQ6500_Serial.h>
 #include <SoftwareSerial.h>
 #endif
 
@@ -92,10 +91,10 @@ WORKING DEMO
 #define EYE_RIGHT_PIN 3
 
 #define AUX_PIN 4
-#define PIXELS_PIN A1
+#define PIXELS_PIN 11
 
 #define BUTTON1_PIN 2
-#define BUTTON2_PIN A0
+#define BUTTON2_PIN 12
 
 // Servo configurations
 #define START_DEGREE_VALUE  90 // The degree value written to the servo at time of attach.
@@ -113,14 +112,14 @@ WORKING DEMO
 #define RX_PIN 7 // set pin for receive (RX) communications
 #define TX_PIN 8 // set pin for transmit (TX) communications
 #define VOLUME 25 // sound board volume level (30 is max)
-#define MP3_TYPE DFPLAYER_MINI // Chip type of DFPlayerMini (see documentation)
-#define MP3_SERIAL_TIMEOUT 100 //average DFPlayer response timeout 100msec..200msec
 
 // Sound effects for predator
 #define SND_CANNON 1 // sound track for cannon firing sound
 #define SND_GROWL 2 // sound track for growl sound
 #define SND_SCREAM 3 // sound track for scream sound
 #define SND_EYES_FLASH 4 // sound track for eyes flashing sound
+#define SND_CANDY 5 // sound for candy
+#define SND_LAUGH 6 // sound for Billy's Laugh
 #endif
 
 // WS2812 Pixel configurations
@@ -181,7 +180,7 @@ OneButton button2(BUTTON2_PIN);
 #ifdef SOUND
 // Declare variables for sound control
 SoftwareSerial serialObj(RX_PIN, TX_PIN); // Create object for serial communications
-DFPlayer mp3Obj; // Create object for DFPlayer Mini
+JQ6500_Serial mp3Obj(serialObj); // Create object for JQ6500 module
 #endif
 
 int curEyesBrightness = 0;  // Keep track of how bright the eyes are for the dimmer
@@ -238,21 +237,21 @@ void initGyro(){
  * Initialization method for DFPlayer Mini board
  */
  void initPlayer(){
-  Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
+  Serial.println(F("Initializing JQ6500..."));
 
   serialObj.begin(9600);
+  //simDelay(1000); Adjusting Timing Sequence
 
-  mp3Obj.begin(serialObj, MP3_SERIAL_TIMEOUT, MP3_TYPE, false);
+  if(!serialObj.available()){
+    Serial.println(F("Serial object not available."));
+  }
 
-  mp3Obj.stop();        //if player was runing during ESP8266 reboot
-  mp3Obj.reset();       //reset all setting to default
-  
-  mp3Obj.setSource(2);  //1=USB-Disk, 2=TF-Card, 3=Aux, 4=Sleep, 5=NOR Flash
-  
-  mp3Obj.setEQ(0);      //0=Off, 1=Pop, 2=Rock, 3=Jazz, 4=Classic, 5=Bass
-  mp3Obj.setVolume(VOLUME); //0..30, module persists volume on power failure
+  mp3Obj.reset();
+  mp3Obj.setSource(MP3_SRC_BUILTIN);
+  mp3Obj.setVolume(VOLUME);
+  mp3Obj.setLoopMode(MP3_LOOP_NONE);
 
-  mp3Obj.sleep();       //inter sleep mode, 24mA
+  simDelayMillis(500);
  }
  #endif
 
@@ -269,6 +268,7 @@ void initAuxLed(){
 
 void initPixels(){
   Serial.println(F("Initializing Pixels..."));
+  pinMode(PIXELS_PIN, OUTPUT); //Added for ALISHA MKXJ
   FastLED.addLeds<WS2812, PIXELS_PIN, RGB>(pixels, PIXELS_NUM);
 }
 
@@ -289,7 +289,7 @@ void initButtons(){
 
 // --- CORE FUNCTIONS --- //
 void moveServos(int posVert, int posHoriz){
-  Serial.println(F("Moving servos..."));
+  //Serial.println(F("Moving servos..."));
 
   ServoVert.setEaseTo(posVert, SERVO_SPEED);
   ServoHoriz.setEaseTo(posHoriz, SERVO_SPEED);
@@ -342,11 +342,8 @@ ServoPos getServoPositons(){
  */
 void playSoundEffect(int soundEffect){
   Serial.print(F("Playing sound effect: "));
-  Serial.println(soundEffect);
-
-  mp3Obj.wakeup(2);
-
-  mp3Obj.playTrack(soundEffect);
+  Serial.print(soundEffect);
+  mp3Obj.playFileByIndexNumber(soundEffect);
 }
 #endif
 
@@ -459,24 +456,20 @@ void plasmaCannonTracking(){
 void plasmaCannonFire(){
   Serial.println(F("Plasma cannon FIRE!!!"));
 
-  playSoundEffect(SND_CANNON);
-
-  simDelayMillis(200);
-
-  pixelsBrighten();
-
-  pixelsOff();
+  pixelsBrighten();//Change date 1_11_2023
+  simDelayMillis(100); //Change date 1_11_2023
+  playSoundEffect(SND_CANNON); //Change date 1_11_2023
+  pixelsOff();//Change date 1_11_2023
 }
 
 void eyesFlash(){
   Serial.println(F("Flashing eyes..."));
 
-  playSoundEffect(SND_EYES_FLASH);
-
-  eyeLedsOn();
-
-  simDelayMillis(200);
-
+  eyeLedsOn();//Change date 1_11_2023
+  simDelayMillis(100); //Change date 1_11_2023
+  playSoundEffect(SND_EYES_FLASH);//Change date 1_11_2023
+  simDelayMillis(200);//Change date 1_11_2023
+  
   eyeLedsOff();
 }
 
@@ -512,6 +505,22 @@ void soundScream(){
   playSoundEffect(SND_SCREAM);
 
   simDelayMillis(400);
+}
+
+void soundCandy(){
+  Serial.println(F("Candy..."));
+
+  playSoundEffect(SND_CANDY);
+
+  simDelayMillis(400);
+}
+
+void soundLaugh(){
+  Serial.println(F("Billy's Laugh..."));
+
+  playSoundEffect(SND_LAUGH);
+
+  simDelayMillis(600);
 }
 
 void startupFx(){
@@ -573,8 +582,18 @@ void handle_Button2_MultiClick(){
   Serial.print(F("Button presses: "));
   Serial.println(clicks);
 
-  if (clicks == 3) {
-    soundScream();
+  switch (clicks){
+    case 3:
+      soundScream();
+      break;
+    case 4:
+      soundCandy();
+      break;
+    case 5:
+      soundLaugh();
+      break;
+    default:
+      break;
   }
 }
 
@@ -596,7 +615,7 @@ void monitorGyro(){
     if((millis() - mpuTimer) > MPU_SAMPLE_RATE){
       curAngles = getAngles();
 
-      printAngles();
+      //printAngles();
 
       curServoPos = getServoPositons();
 

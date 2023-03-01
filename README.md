@@ -37,7 +37,7 @@ You can download the 3D printable Predator items from Thingiverse:
 
 https://www.thingiverse.com/thing:4056653
 
-**You can purchase an easy to install and use Arduino shield (Nano included) designed specifically for this project. This Board comes pre-flashed with the Crashworks code installed.**
+**You can purchase the ALISHA MK X-J an easy to install and use Arduino shield (Nano included) designed specifically for this project. This Board comes pre-flashed with the Crashworks code installed.**
 
 **_A.L.I.S.H.A._ - Arduino nano Led & Integrated Servo Helmet Actuator for 3D Printed Helmets**
 
@@ -59,13 +59,13 @@ See: [https://code.visualstudio.com/](https://code.visualstudio.com/) using the 
 4. Download and install the `MPU6050_light` library from here: [https://github.com/rfetick/MPU6050_light](https://github.com/rfetick/MPU6050_light)
 5. Download and install the `FastLED` library from here: [https://github.com/FastLED/FastLED](https://github.com/FastLED/FastLED)
 6. Download and install the `OneButton` library from here: [https://github.com/mathertel/OneButton](https://github.com/mathertel/OneButton)
-7. Download and install the `DFPlayer` library from here: [https://github.com/enjoyneering/DFPlayer](https://github.com/enjoyneering/DFPlayer)
+7. Download and install the `JQ6500_Serial` library from here: [https://github.com/sleemanj/JQ6500_Serial](https://github.com/sleemanj/JQ6500_Serial)
 
 Successful installation will result in a sketch build without errors
 
 ## Wiring Diagram
 
-![Predator Wiring Diagram](images/Predator_Wiring_Diagram_v1.0.jpg)
+![Predator Wiring Diagram](images/Predator_Wiring_Diagram_v2.0.jpg)
 
 ## BOM - A.L.I.S.H.A.
 Most components can be found on [Amazon](https://www.amazon.com), [eBay](https://www.ebay.com) or [AliExpress](https://www.aliexpress.com)
@@ -75,7 +75,7 @@ Most components can be found on [Amazon](https://www.amazon.com), [eBay](https:/
 * 2x MG995 Servo
 * 3 Watt 8 ohm speaker or external powered speaker (recommended)
 * Micro SD Card
-* USB Power Supply (5 volts 2 amps recommended)
+* 2x USB Power Supply (5 volts 2 amps recommended)
 * 2x Momentary Switch
 
 ## Built With
