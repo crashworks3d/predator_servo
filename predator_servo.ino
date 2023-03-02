@@ -90,7 +90,7 @@ WORKING DEMO
 #define EYE_LEFT_PIN 6
 #define EYE_RIGHT_PIN 3
 
-#define AUX_PIN 4
+#define AUX_PIN 13 // For older boards set to pin 4.  For newer boards (MK X-J) set to pin 13.
 #define PIXELS_PIN 11
 
 #define BUTTON1_PIN 2
